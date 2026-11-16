@@ -192,8 +192,32 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
   .live { grid-template-columns: 1fr 1fr; }
   .top strong { font-size: 18px; }
 }
+.staff { font-size: 16px; }
+.staff h1 { font-size: 32px; margin: 0 0 4px; }
+.staff .est { margin: 0; font-size: 18px; letter-spacing: 0.02em; }
+.staff .meta { margin: 0 0 10px; font-size: 18px; }
+.staff h2 { font-size: 18px; margin: 10px 0 6px; }
+.staff table { width: 100%; border-collapse: collapse; border: 2px solid #111; margin-bottom: 8px; }
+.staff th, .staff td { border: 1px solid #111; padding: 5px 6px; font-size: 16px; }
+.staff .num { text-align: right; font-variant-numeric: tabular-nums; }
+.staff ul { margin: 6px 0 8px; padding-left: 18px; }
+.staff li { margin: 3px 0; }
+.staff .firma { margin-top: 12px; font-size: 16px; }
+.caja { display: inline-block; width: 16px; height: 16px; border: 2px solid #111; }
+.caja-td { width: 28px; text-align: center; }
+.meals { display: grid; grid-template-columns: 1fr; gap: 10px; }
+@media (min-width: 900px) {
+  .meals { grid-template-columns: repeat(3, 1fr); }
+}
 @media print {
   body { background: white; }
+  @page { size: A4 portrait; margin: 10mm; }
+  .staff.con-corte { break-before: page; page-break-before: always; }
+  .meals { grid-template-columns: repeat(3, 1fr); }
+  .staff th, .staff td { font-size: 12px; padding: 3px 4px; }
+  .staff h1 { font-size: 22px; }
+  .staff h2 { font-size: 13px; }
+  .staff li, .staff .firma, .staff .meta, .staff .est { font-size: 12px; }
   #app-ui .top, #app-ui .nav, #app-ui .no-print, .toast, .modal, .btn, .btn-ghost, .btn-bad { display: none !important; }
   #app-ui, .screen { max-width: none; padding: 0; }
   .sheet { box-shadow: none; border-radius: 0; }
@@ -962,6 +986,9 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
         limites: limitesDesde(categoria),
         notasInternas: "",
         observaciones: "",
+        nombrePersonal: "",
+        minutosMezcla: 5,
+        corrales: [],
         referencia: null,
       },
       p
@@ -980,7 +1007,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       categoriaId: "bov-adap",
       pv: 0,
       gmd: 0,
-      cabezas: 128,
+      cabezas: 132,
       imsModo: "kg",
       imsKg: 9.443984,
       imsPct: 0,
@@ -993,8 +1020,14 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
         { nombre: "Noche", kg: 900 },
       ],
       ficha: "Ficha de mezcla Rufino 16/11/2026",
+      nombrePersonal: "Mezcla adaptación",
+      minutosMezcla: 5,
+      corrales: [
+        { nombre: "Corrales 1 y 2", cabezas: 90 },
+        { nombre: "Corral 4", cabezas: 42 },
+      ],
       notasInternas:
-        "Corrales 1, 2 y 4. La planilla sumaba 128 cabezas (90 + 38). El corral 4 pasó a 42: el lote de hoy es 132. La oferta por cabeza está calculada sobre 2.100 kg/día y 128 cabezas. Los tres tratos no son iguales: 600, 600 y 900 kg.",
+        "La oferta por cabeza sale de 2.100 kg/día y las 128 cabezas de la planilla (90 + 38). Hoy el corral 4 tiene 42 y el lote suma 132. Los tratos son 600, 600 y 900 kg.",
       observaciones: "",
       items: [
         fila("bagazo", 30.1132, 15, 45),
@@ -1021,11 +1054,17 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       comidas: [
         { nombre: "Mañana", kg: 385 },
         { nombre: "Mediodía", kg: 385 },
-        { nombre: "Tarde-noche", kg: 534 },
+        { nombre: "Noche", kg: 534 },
       ],
       ficha: "Ficha de mezcla Rufino 16/11/2026",
+      nombrePersonal: "Mezcla recría",
+      minutosMezcla: 5,
+      corrales: [
+        { nombre: "Corral A", cabezas: 47 },
+        { nombre: "Corral B", cabezas: 59 },
+      ],
       notasInternas:
-        "Dos corrales, 47 + 59 = 106 cabezas. Total del día 1.304 kg tal cual. Los tratos son 385, 385 y 534 kg, no tres partes iguales. La carga de 385 kg es la de mañana y mediodía.",
+        "Dos corrales, 47 + 59 = 106 cabezas. Total del día 1.304 kg tal cual. Los tratos son 385, 385 y 534 kg.",
       observaciones: "",
       items: [
         fila("bagazo", 46.2003, 20, 60),
@@ -1313,8 +1352,8 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
 
   function crearBase() {
     return {
-      version: 5,
-      settings: { tipoCambio: 6180, lecheria: false, mostrarCostos: false },
+      version: 6,
+      settings: { tipoCambio: 6180, lecheria: false, mostrarCostos: false, informeModo: "cliente" },
       ingredientes: ingredientes,
       categorias: categorias,
       clientes: [
@@ -1919,6 +1958,55 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     return { ok: true, costoKgMs: res.value, texto: "Listo. La mezcla de menor costo ya está cargada. Podés pasarla a manual para retocar un porcentaje." };
   }
 
+  function redondearKgPersonal(kg) {
+    if (kg >= 50) return Math.round(kg);
+    return Math.round(kg * 2) / 2;
+  }
+
+  function cuadrarA(valores, objetivo) {
+    var suma = 0;
+    var mayor = 0;
+    for (var i = 0; i < valores.length; i++) {
+      suma += valores[i];
+      if (valores[i] > valores[mayor]) mayor = i;
+    }
+    var drift = Math.round((objetivo - suma) * 2) / 2;
+    valores[mayor] = Math.round((valores[mayor] + drift) * 2) / 2;
+    if (valores[mayor] < 0) valores[mayor] = 0;
+    return valores;
+  }
+
+  function cargaParaPersonal(filas, totalKg) {
+    var vals = filas.map(function (f) { return redondearKgPersonal(f.kg); });
+    cuadrarA(vals, Math.round(totalKg));
+    return filas.map(function (f, i) {
+      return { id: f.id, nombre: f.nombre, kg: vals[i], esAgua: !!f.esAgua };
+    });
+  }
+
+  function repartirCorrales(totalKg, corrales) {
+    var cabezas = 0;
+    (corrales || []).forEach(function (c) { cabezas += Number(c.cabezas) || 0; });
+    if (!corrales || !corrales.length || cabezas <= 0) return [];
+    var vals = corrales.map(function (c) {
+      return redondearKgPersonal(totalKg * ((Number(c.cabezas) || 0) / cabezas));
+    });
+    cuadrarA(vals, Math.round(totalKg));
+    return corrales.map(function (c, i) {
+      return { nombre: c.nombre, cabezas: Number(c.cabezas) || 0, kg: vals[i] };
+    });
+  }
+
+  function ordenPersonal(ing, id) {
+    if (id === "agua") return 90;
+    if (!ing) return 50;
+    if (ing.grupo === "Núcleos") return 70;
+    if (id === "ddgs") return 60;
+    if (id === "calcareo") return 65;
+    if (ing.forraje) return 10;
+    return 40;
+  }
+
   function ajustarKilosDeCarga(filas, carga) {
     if (!(carga > 0) || !filas.length) return;
     var objetivo = Math.round(carga * 10) / 10;
@@ -1986,6 +2074,10 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     usoCompatible: usoCompatible,
     cerrarEn100: cerrarEn100,
     parseNum: parseNum,
+    redondearKgPersonal: redondearKgPersonal,
+    cargaParaPersonal: cargaParaPersonal,
+    repartirCorrales: repartirCorrales,
+    ordenPersonal: ordenPersonal,
     byId: byId,
   };
 })(typeof globalThis !== "undefined" ? globalThis : this);
@@ -2042,7 +2134,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       var raw = localStorage.getItem(KEY);
       if (raw) {
         var db = JSON.parse(raw);
-        if (db && db.ingredientes && db.formulas && db.version >= 1 && db.version <= 5) {
+        if (db && db.ingredientes && db.formulas && db.version >= 1 && db.version <= 6) {
           if (db.version < 3) {
             for (var bi = 0; bi < db.ingredientes.length; bi++) {
               if (db.ingredientes[bi].id === "bagazo" && Number(db.ingredientes[bi].ms) === 50) {
@@ -2070,7 +2162,20 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
               ing.nota = "MS 55 %, medida el 16/11/2026 en Rancho Rufino con freidora de aire. Antes, la planilla de agosto usaba 50 %.";
             }
           });
-          db.version = 5;
+          if (!db.settings.informeModo) db.settings.informeModo = "cliente";
+          db.formulas.forEach(function (fm) {
+            if (fm.minutosMezcla == null) fm.minutosMezcla = 5;
+            if (!fm.corrales) {
+              if (fm.id === "rufino-ficha-adap") {
+                fm.corrales = [{ nombre: "Corrales 1 y 2", cabezas: 90 }, { nombre: "Corral 4", cabezas: 42 }];
+                fm.nombrePersonal = fm.nombrePersonal || "Mezcla adaptación";
+              } else if (fm.id === "rufino-ficha-recria") {
+                fm.corrales = [{ nombre: "Corral A", cabezas: 47 }, { nombre: "Corral B", cabezas: 59 }];
+                fm.nombrePersonal = fm.nombrePersonal || "Mezcla recría";
+              } else fm.corrales = [];
+            }
+          });
+          db.version = 6;
           return db;
         }
       }
@@ -2402,7 +2507,8 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     html += "</tbody></table></div>";
     html += "<p>Semana (7 días): " + gs(res.costoSemana) + ". Mes (30 días): " + gs(res.costoMes) + ". Tipo de cambio: " + fmt(S.db.settings.tipoCambio, 0) + " Gs por USD.</p>";
     html += "</div>";
-    html += '<button class="btn" type="button" data-go="informe">Informe para imprimir o PDF</button>';
+    html += '<button class="btn" type="button" data-act="hoja-personal">Hoja para el personal</button>';
+    html += '<button class="btn-ghost" type="button" data-go="informe">Informe para el cliente</button>';
     return html;
   }
   function kpi(a, b) { return "<div><span>" + esc(a) + "</span><b>" + esc(b) + "</b></div>"; }
@@ -2627,8 +2733,122 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
 
   function screenInforme(f, res) {
     if (!f) return "<h1>Informe</h1>";
+    var modo = (S.db.settings && S.db.settings.informeModo) || "cliente";
     var costosOn = !!(S.db.settings && S.db.settings.mostrarCostos);
-    return '<div class="no-print"><button class="btn-ghost" type="button" data-go="resultado">Volver al resultado</button><label class="check"><input type="checkbox" data-bind="mostrarCostos"' + (costosOn ? " checked" : "") + "><span>Mostrar costos en el informe</span></label><button class=\"btn\" type=\"button\" data-act=\"imprimir\">Imprimir o guardar PDF</button><p class=\"sub\">En el iPad: compartir, Imprimir, y después PDF. Las notas internas no salen.</p></div>" + informeHTML(f, res);
+    var html = '<div class="no-print">';
+    html += '<button class="btn-ghost" type="button" data-go="resultado">Volver al resultado</button>';
+    html += '<div class="seg">';
+    html += segBtn("informe-modo", "cliente", "Informe para el cliente", modo === "cliente");
+    html += segBtn("informe-modo", "personal", "Hoja para el personal", modo === "personal");
+    html += segBtn("informe-modo", "ambos", "Los dos", modo === "ambos");
+    html += "</div>";
+    if (modo !== "personal") html += '<label class="check"><input type="checkbox" data-bind="mostrarCostos"' + (costosOn ? " checked" : "") + "><span>Mostrar costos en el informe</span></label>";
+    if (modo !== "cliente") html += editorPersonal(f);
+    html += '<button class="btn" type="button" data-act="imprimir">Imprimir o guardar PDF</button>';
+    html += '<p class="sub">En el iPad: compartir, Imprimir, y después PDF.</p></div>';
+    if (modo !== "personal") html += informeHTML(f, res);
+    if (modo !== "cliente") {
+      var hoja = hojaPersonal(f, res);
+      if (modo === "ambos") hoja = hoja.replace('class="sheet staff"', 'class="sheet staff con-corte"');
+      html += hoja;
+    }
+    return html;
+  }
+  function editorPersonal(f) {
+    if (!f.corrales) f.corrales = [];
+    var html = '<div class="card"><h2>Para la hoja del personal</h2>';
+    html += '<label class="f"><span>Nombre de la mezcla</span><input data-bind="nombrePersonal" value="' + esc(f.nombrePersonal || "") + '" placeholder="Mezcla adaptación"></label>';
+    html += numField("minutosMezcla", "Minutos de mezclado", f.minutosMezcla == null ? 5 : f.minutosMezcla);
+    html += "<h3>Corrales</h3>";
+    f.corrales.forEach(function (c, i) {
+      html += '<div class="grid-2">';
+      html += '<label class="f"><span>Nombre</span><input data-bind="corral-nombre" data-i="' + i + '" value="' + esc(c.nombre || "") + '"></label>';
+      html += '<label class="f"><span>Animales</span><input inputmode="decimal" data-bind="corral-cab" data-i="' + i + '" value="' + campoNum(c.cabezas) + '"></label>';
+      html += "</div>";
+      html += '<button class="btn-ghost" type="button" data-act="quitar-corral" data-i="' + i + '">Quitar ' + esc(c.nombre || "corral") + "</button>";
+    });
+    html += '<button class="btn-ghost" type="button" data-act="agregar-corral">Agregar corral</button></div>';
+    return html;
+  }
+  function comidasDe(f, res) {
+    if (f.comidas && f.comidas.length) return f.comidas;
+    var n = Math.max(1, Number(f.tratos) || 1);
+    var kg = (Number(f.cargaKg) || res.cargaKg || 0);
+    var lista = [];
+    for (var i = 0; i < n; i++) lista.push({ nombre: "Comida " + (i + 1), kg: kg });
+    return lista;
+  }
+  function filasOrdenadas(res) {
+    return res.cargaFilas.slice().sort(function (a, b) {
+      var ia = root.TGRation.ordenPersonal(byId(S.db.ingredientes, a.id), a.id);
+      var ib = root.TGRation.ordenPersonal(byId(S.db.ingredientes, b.id), b.id);
+      return ia - ib;
+    });
+  }
+  function hojaPersonal(f, res) {
+    var cli = byId(S.db.clientes, f.clienteId) || { nombre: "", establecimiento: "" };
+    var establecimiento = cli.establecimiento || cli.nombre || "";
+    var mezcla = (f.nombrePersonal && String(f.nombrePersonal).trim()) || f.nombre;
+    var minutos = f.minutosMezcla == null ? 5 : f.minutosMezcla;
+    var corrales = f.corrales || [];
+    var animales = corrales.reduce(function (s, c) { return s + (Number(c.cabezas) || 0); }, 0);
+    if (!animales) animales = Number(f.cabezas) || 0;
+    var base = res.cargaKg || f.cargaKg || 1;
+    var orden = filasOrdenadas(res);
+    var html = '<article class="sheet staff">';
+    html += "<header><p class=\"est\">" + esc(establecimiento) + "</p>";
+    html += "<h1>" + esc(mezcla) + "</h1>";
+    html += "<p class=\"meta\">" + esc(f.fecha) + " · " + fmt(animales, 0) + " animales</p></header>";
+    html += '<div class="meals">';
+    comidasDe(f, res).forEach(function (comida) {
+      var cortos = { bagazo: "Bagazo", maiz: "Maíz molido", ddgs: "Burlanda", nutrix: "Núcleo", agua: "Agua", soja: "Harina de soja", afrecho: "Afrecho", "silo-maiz": "Silo de maíz", calcareo: "Calcáreo", "vilomix-bov": "Núcleo Vilomix", ovinofos: "Ovinofós", ovinomix: "Ovinomix" };
+      var crudas = orden.map(function (r) {
+        return { id: r.id, nombre: cortos[r.id] || r.nombre, kg: base > 0 ? (r.kgCarga * comida.kg) / base : 0, esAgua: r.id === "agua" };
+      });
+      var filas = root.TGRation.cargaParaPersonal(crudas, comida.kg);
+      var total = filas.reduce(function (s, r) { return s + r.kg; }, 0);
+      html += '<section class="meal"><h2>' + esc(comida.nombre) + " · " + fmt(comida.kg, 0) + " kg</h2>";
+      html += '<table><thead><tr><th></th><th>Orden de carga</th><th class="num">Cargar</th></tr></thead><tbody>';
+      filas.forEach(function (r) {
+        var cant = r.esAgua ? fmt(r.kg, r.kg % 1 ? 1 : 0) + " L" : fmt(r.kg, r.kg % 1 ? 1 : 0) + " kg";
+        html += '<tr><td class="caja-td"><span class="caja"></span></td><td>' + esc(r.nombre) + "</td><td class=\"num\"><b>" + cant + "</b></td></tr>";
+      });
+      html += '<tr><td></td><td><b>Total</b></td><td class="num"><b>' + fmt(total, total % 1 ? 1 : 0) + " kg</b></td></tr>";
+      html += "</tbody></table></section>";
+    });
+    html += "</div>";
+    if (corrales.length) {
+      var comidas = comidasDe(f, res);
+      html += "<h2>Reparto por corral</h2>";
+      html += "<table><thead><tr><th>Corral</th><th class=\"num\">Animales</th>";
+      comidas.forEach(function (c) { html += '<th class="num">' + esc(c.nombre) + "</th>"; });
+      html += "</tr></thead><tbody>";
+      corrales.forEach(function (corral, idx) {
+        html += "<tr><td>" + esc(corral.nombre) + "</td><td class=\"num\">" + fmt(corral.cabezas, 0) + "</td>";
+        comidas.forEach(function (comida) {
+          var partes = root.TGRation.repartirCorrales(comida.kg, corrales);
+          var kg = partes[idx] ? partes[idx].kg : 0;
+          html += '<td class="num"><b>' + fmt(kg, kg % 1 ? 1 : 0) + " kg</b></td>";
+        });
+        html += "</tr>";
+      });
+      html += "</tbody></table>";
+      html += "<h2>Sobras en el comedero</h2><table><thead><tr><th>Corral</th><th>Poco</th><th>Normal</th><th>Mucho</th></tr></thead><tbody>";
+      corrales.forEach(function (corral) {
+        html += "<tr><td>" + esc(corral.nombre) + '</td><td class="caja-td"><span class="caja"></span></td><td class="caja-td"><span class="caja"></span></td><td class="caja-td"><span class="caja"></span></td></tr>';
+      });
+      html += "</tbody></table>";
+    }
+    html += "<h2>Indicaciones</h2><ul>";
+    html += "<li>Primero el forraje (bagazo). Después el grano, la burlanda, el núcleo y, al final, el agua.</li>";
+    html += "<li>Mezclá " + fmt(minutos, 0) + " minutos después de cargar el último ingrediente.</li>";
+    html += "<li>Repartí parejo en todo el comedero.</li>";
+    html += "<li>A la mañana, antes del primer trato, mirá el comedero y marcá las sobras.</li>";
+    html += "<li>Si falta un insumo, avisá. No cambies la mezcla sin autorización.</li>";
+    html += "</ul>";
+    html += '<p class="firma">Responsable ________________________________ &nbsp;&nbsp; Firma ________________________________</p>';
+    html += "</article>";
+    return html;
   }
 
   function informeHTML(f, res) {
@@ -2877,6 +3097,26 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       S.confirm = null;
       if (cancelar) cancelar();
       render();
+    } else if (act === "hoja-personal") {
+      S.db.settings.informeModo = "personal";
+      S.screen = "informe";
+      save();
+      render();
+      window.scrollTo(0, 0);
+    } else if (act === "informe-modo") {
+      S.db.settings.informeModo = t.getAttribute("data-val");
+      save();
+      render();
+    } else if (act === "agregar-corral") {
+      if (!f.corrales) f.corrales = [];
+      f.corrales.push({ nombre: "Corral", cabezas: 0 });
+      save();
+      render();
+    } else if (act === "quitar-corral") {
+      var qi = Number(t.getAttribute("data-i"));
+      if (f.corrales) f.corrales.splice(qi, 1);
+      save();
+      render();
     } else if (act === "imprimir") {
       window.print();
     }
@@ -2914,7 +3154,18 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     if (!bind) return;
     var f = activa();
     var v = el.type === "checkbox" ? el.checked : el.value;
-    if (bind === "nombre" || bind === "fecha" || bind === "notasInternas" || bind === "observaciones") f[bind] = v;
+    if (bind === "nombre" || bind === "fecha" || bind === "notasInternas" || bind === "observaciones" || bind === "nombrePersonal") f[bind] = v;
+    else if (bind === "minutosMezcla") {
+      var mins = parseNum(v);
+      if (mins != null) f.minutosMezcla = mins;
+    } else if (bind === "corral-nombre") {
+      var ci = Number(el.getAttribute("data-i"));
+      if (f.corrales && f.corrales[ci]) f.corrales[ci].nombre = v;
+    } else if (bind === "corral-cab") {
+      var cj = Number(el.getAttribute("data-i"));
+      var cab = parseNum(v);
+      if (f.corrales && f.corrales[cj] && cab != null) f.corrales[cj].cabezas = cab;
+    }
     else if (["pv", "gmd", "cabezas", "imsPct", "imsKg", "imsGPorKg", "tratos", "cargaKg", "aguaL"].indexOf(bind) >= 0) {
       var n = parseNum(v);
       if (n != null) f[bind] = n;
@@ -3187,7 +3438,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       try {
         var db = JSON.parse(reader.result);
         if (!db.ingredientes || !db.formulas) throw new Error("formato");
-        db.version = 5;
+        db.version = 6;
         S.db = db;
         if (!byId(S.db.formulas, S.db.activeFormulaId) && S.db.formulas[0]) S.db.activeFormulaId = S.db.formulas[0].id;
         save();
@@ -3201,7 +3452,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     reader.readAsText(file);
   }
 
-  root.TGUI = { boot: boot, informeHTML: informeHTML };
+  root.TGUI = { boot: boot, informeHTML: informeHTML, hojaPersonal: hojaPersonal };
   if (typeof document !== "undefined") {
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
     else boot();
