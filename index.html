@@ -96,7 +96,7 @@ input:focus, select:focus, textarea:focus { outline: 3px solid #d7b07a; border-c
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .seg { display: flex; flex-wrap: wrap; background: #efe8dc; border-radius: 14px; padding: 4px; gap: 4px; margin-bottom: 12px; }
 .seg button {
-  flex: 1 1 42%; min-height: 48px; border: 0; border-radius: 11px; background: transparent; font-weight: 650;
+  flex: 1 1 42%; min-height: 48px; border: 0; border-radius: 11px; background: transparent; color: var(--muted); font-weight: 650;
 }
 .seg button.on { background: var(--green); color: #f6f1e6; }
 .btn, .btn-ghost, .btn-bad {
@@ -167,7 +167,7 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   position: fixed; inset: 0; background: rgba(28, 25, 20, 0.45); z-index: 8;
   display: flex; align-items: flex-end; justify-content: center;
 }
-.modal .card { width: min(560px, 100%); margin: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; padding-bottom: calc(16px + var(--safe)); }
+.modal .card { width: min(560px, 100%); margin: 0; max-height: 85dvh; overflow: auto; border-bottom-left-radius: 0; border-bottom-right-radius: 0; padding-bottom: calc(16px + var(--safe)); }
 .list-btn {
   width: 100%; text-align: left; background: var(--paper); border: 1px solid var(--line);
   border-radius: 16px; padding: 14px; margin: 0 0 10px; box-shadow: var(--shadow);
@@ -579,7 +579,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       nombre: "Bagazo de caña",
       grupo: "Forrajes",
       forraje: true,
-      ms: 50,
+      ms: 55,
       pb: 2,
       ndt: 45,
       fdn: 86,
@@ -590,8 +590,8 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       orden: 1,
       precioGsKg: 160,
       fuente:
-        "Bagazo húmedo, tablas brasileñas (PB muy baja, FDN muy alta). En la planilla Granusa la MS figura en 50 %; en noviembre se usó 55 %. Editable.",
-      nota: "MS de referencia 50 %. Cambiala a 55 % si estás con el bagazo de noviembre.",
+        "Bagazo húmedo, tablas brasileñas (PB muy baja, FDN muy alta). MS 55 %, medida el 16/11/2026 en Rancho Rufino con freidora de aire. La planilla Granusa de agosto figuraba en 50 %. Editable.",
+      nota: "MS 55 %, medida el 16/11/2026 en Rancho Rufino con freidora de aire. Antes, la planilla de agosto usaba 50 %.",
     }),
     ing({
       id: "calcareo",
@@ -1243,7 +1243,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
 
   function crearBase() {
     return {
-      version: 2,
+      version: 3,
       settings: { tipoCambio: 6180, lecheria: false },
       ingredientes: ingredientes,
       categorias: categorias,
@@ -1952,8 +1952,16 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       var raw = localStorage.getItem(KEY);
       if (raw) {
         var db = JSON.parse(raw);
-        if (db && (db.version === 1 || db.version === 2) && db.ingredientes && db.formulas) {
-          db.version = 2;
+        if (db && db.ingredientes && db.formulas && (db.version === 1 || db.version === 2 || db.version === 3)) {
+          if (db.version < 3) {
+            for (var bi = 0; bi < db.ingredientes.length; bi++) {
+              if (db.ingredientes[bi].id === "bagazo" && Number(db.ingredientes[bi].ms) === 50) {
+                db.ingredientes[bi].ms = 55;
+                db.ingredientes[bi].nota = "MS 55 %, medida el 16/11/2026 en Rancho Rufino con freidora de aire. Antes, la planilla de agosto usaba 50 %.";
+              }
+            }
+          }
+          db.version = 3;
           return db;
         }
       }
@@ -2036,15 +2044,16 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
   }
   function modal() {
     var c = S.confirm;
-    return (
-      '<div class="modal"><div class="card"><h2>' +
-      esc(c.titulo) +
-      "</h2><p>" +
-      esc(c.texto) +
-      '</p><button class="btn" type="button" data-act="confirm-yes">' +
-      esc(c.si) +
-      '</button><button class="btn-ghost" type="button" data-act="confirm-no">Cancelar</button></div></div>'
-    );
+    var botones = "";
+    if (c.acciones && c.acciones.length) {
+      c.acciones.forEach(function (a, i) {
+        botones += '<button class="' + (i === 0 ? "btn" : "btn-ghost") + '" type="button" data-act="confirm-acc" data-i="' + i + '">' + esc(a.label) + "</button>";
+      });
+    } else if (c.si) {
+      botones += '<button class="btn" type="button" data-act="confirm-yes">' + esc(c.si) + "</button>";
+    }
+    if (c.no !== null) botones += '<button class="btn-ghost" type="button" data-act="confirm-no">' + esc(c.no || "Cancelar") + "</button>";
+    return '<div class="modal"><div class="card"><h2>' + esc(c.titulo) + "</h2><p>" + esc(c.texto) + "</p>" + botones + "</div></div>";
   }
 
   function screenFormular(f, res) {
@@ -2076,8 +2085,8 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     html += '<label class="f"><span>Cabezas</span><input inputmode="decimal" data-fid="cabezas" data-bind="cabezas" value="' + esc(String(f.cabezas)) + '"></label>';
     html += "</div>";
     html += '<div class="seg">';
-    html += segBtn("especie", "bovino", "Bovinos", especie);
-    html += segBtn("especie", "ovino", "Ovinos", especie);
+    html += segBtn("especie", "bovino", "Bovinos", especie === "bovino");
+    html += segBtn("especie", "ovino", "Ovinos", especie === "ovino");
     html += "</div>";
     html += selectCategorias(f);
     html += '<p class="sub">El cliente no fija la especie: en la lista están bovinos y ovinos. Requerimiento: PB ' + fmt(req.pb, 1) + " % · NDT " + fmt(req.ndt, 0) + " % · Ca " + fmt(req.ca, 2) + " · P " + fmt(req.p, 2) + " · consumo " + (cat && cat.imsModo === "kg" ? fmt(cat.imsKg, 2) + " kg MS" : fmt(req.imsPct, 2) + " % del peso") + ".</p>";
@@ -2597,8 +2606,13 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       render();
     } else if (act === "especie") {
       var esp = t.getAttribute("data-val");
+      var actual = catDe(f);
+      if (actual && actual.especie === esp) return;
       var primero = categoriasVisibles().filter(function (c) { return c.especie === esp; })[0];
-      if (primero) f.categoriaId = primero.id;
+      if (primero) {
+        f.categoriaId = primero.id;
+        pedirSacarInsumos(f);
+      }
       save();
       render();
     } else if (act === "modo" || act === "imsModo") {
@@ -2703,9 +2717,19 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       var run = S.confirm && S.confirm.run;
       S.confirm = null;
       if (run) run();
+      save();
+      render();
+    } else if (act === "confirm-acc") {
+      var idx = Number(t.getAttribute("data-i"));
+      var acc = S.confirm && S.confirm.acciones && S.confirm.acciones[idx];
+      S.confirm = null;
+      if (acc && acc.run) acc.run();
+      save();
       render();
     } else if (act === "confirm-no") {
+      var cancelar = S.confirm && S.confirm.cancelar;
       S.confirm = null;
+      if (cancelar) cancelar();
       render();
     } else if (act === "imprimir") {
       window.print();
@@ -2748,21 +2772,17 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     else if (["pv", "gmd", "cabezas", "imsPct", "imsKg", "imsGPorKg", "tratos", "cargaKg", "aguaL"].indexOf(bind) >= 0) {
       var n = parseNum(v);
       if (n != null) f[bind] = n;
-    } else if (bind === "clienteId" || bind === "categoriaId") {
-      f[bind] = v;
-      if (bind === "clienteId" && sumaCargada(f) === 0) {
-        var destino = v === "maria-elena" ? "ovi-cordero" : v === "rufino" ? "bov-adap" : "";
-        var catNueva = destino ? byId(S.db.categorias, destino) : null;
-        if (catNueva) {
-          f.categoriaId = catNueva.id;
-          f.pv = catNueva.pv;
-          f.gmd = catNueva.gmd;
-          f.imsPct = catNueva.req.imsPct;
-          f.imsModo = catNueva.imsModo || "pct";
-          f.imsKg = catNueva.imsModo === "kg" ? catNueva.imsKg : Math.round(catNueva.pv * catNueva.req.imsPct) / 100;
-          f.limites = root.TGData.limitesDesde(catNueva);
-        }
+    } else if (bind === "clienteId") {
+      if (v === f.clienteId) return;
+      if (sumaCargada(f) === 0 && (!f.nombre || f.nombre === "Nueva ración")) {
+        aplicarClienteVacio(f, v);
+        return;
       }
+      pedirCambioCliente(f, v);
+    } else if (bind === "categoriaId") {
+      if (v === f.categoriaId) return;
+      f.categoriaId = v;
+      pedirSacarInsumos(f);
     }
     else if (bind === "pct" || bind === "min" || bind === "max") {
       var it = itemDe(f, el.getAttribute("data-id"));
@@ -2848,6 +2868,108 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     if (bind === "cli-notas") c.notas = v;
   }
 
+  function aplicarClienteVacio(f, clienteId) {
+    f.clienteId = clienteId;
+    var catId = clienteId === "maria-elena" ? "ovi-cordero" : "bov-adap";
+    var catNueva = byId(S.db.categorias, catId);
+    if (!catNueva) return;
+    f.categoriaId = catNueva.id;
+    f.pv = catNueva.pv;
+    f.gmd = catNueva.gmd;
+    f.imsPct = catNueva.req.imsPct;
+    f.imsModo = catNueva.imsModo || "pct";
+    f.imsKg = catNueva.imsModo === "kg" ? catNueva.imsKg : Math.round(catNueva.pv * catNueva.req.imsPct) / 100;
+    f.limites = root.TGData.limitesDesde(catNueva);
+  }
+  function empezarPara(clienteId) {
+    var catId = clienteId === "maria-elena" ? "ovi-cordero" : "bov-adap";
+    var catNueva = byId(S.db.categorias, catId) || byId(S.db.categorias, "bov-adap");
+    var id = "f" + Date.now().toString(36);
+    var cli = byId(S.db.clientes, clienteId);
+    S.db.formulas.unshift({
+      id: id,
+      clienteId: clienteId,
+      nombre: "Nueva ración",
+      fecha: hoy(),
+      categoriaId: catNueva.id,
+      pv: catNueva.pv,
+      gmd: catNueva.gmd,
+      cabezas: 1,
+      imsModo: catNueva.imsModo || "pct",
+      imsPct: catNueva.req.imsPct,
+      imsKg: catNueva.imsModo === "kg" ? catNueva.imsKg : Math.round(catNueva.pv * catNueva.req.imsPct) / 100,
+      modo: "manual",
+      tratos: 2,
+      cargaKg: 1000,
+      aguaL: 0,
+      items: [],
+      limites: root.TGData.limitesDesde(catNueva),
+      notas: "",
+      referencia: null,
+    });
+    S.db.activeFormulaId = id;
+    S.screen = "formular";
+    toast("Fórmula nueva para " + (cli ? cli.nombre : "el cliente") + ".");
+  }
+  function pedirCambioCliente(f, nuevoId) {
+    var cli = byId(S.db.clientes, nuevoId);
+    var actual = byId(S.db.clientes, f.clienteId);
+    var nombre = cli ? cli.nombre : "ese cliente";
+    var de = actual ? actual.nombre : "otro cliente";
+    var acciones = [
+      { label: "Empezar una fórmula nueva", run: function () { empezarPara(nuevoId); } },
+      { label: "Mover esta fórmula", run: function () { f.clienteId = nuevoId; } },
+    ];
+    S.db.formulas.forEach(function (g) {
+      if (g.clienteId === nuevoId && g.id !== f.id) {
+        acciones.push({
+          label: "Abrir: " + g.nombre,
+          run: function () {
+            S.db.activeFormulaId = g.id;
+            S.screen = "formular";
+          },
+        });
+      }
+    });
+    S.confirm = {
+      titulo: nombre,
+      texto: "Esta fórmula es de " + de + ". Podés empezar una nueva para " + nombre + ", mover esta, o abrir una que ya esté guardada.",
+      acciones: acciones,
+      no: "Cancelar",
+    };
+  }
+  function insumosFueraDe(f) {
+    var cat = catDe(f);
+    var mal = [];
+    (f.items || []).forEach(function (it) {
+      if (!(Number(it.pct) > 0)) return;
+      var ing = byId(S.db.ingredientes, it.ingredientId);
+      if (ing && cat && !root.TGRation.insumoOfrecido(ing, cat)) mal.push(ing);
+    });
+    return mal;
+  }
+  function pedirSacarInsumos(f) {
+    var mal = insumosFueraDe(f);
+    if (!mal.length) return;
+    var nombres = mal.map(function (i) { return i.nombre; }).join(", ");
+    var ids = {};
+    mal.forEach(function (i) { ids[i.id] = true; });
+    S.confirm = {
+      titulo: "Estos insumos no van acá",
+      texto: nombres + ". En esta categoría no se ofrecen. ¿Los saco de la fórmula?",
+      si: "Sacarlos",
+      no: "Dejarlos",
+      run: function () {
+        f.items.forEach(function (it) {
+          if (ids[it.ingredientId]) {
+            it.pct = 0;
+            it.usar = false;
+          }
+        });
+        toast("Los saqué. Cerrá los porcentajes en 100 si hace falta.");
+      },
+    };
+  }
   function visibleEnMinimo(ing, f, cat) {
     if (!ing || !ing.activo || !(ing.ms > 0)) return false;
     var it = (f.items || []).filter(function (x) { return x.ingredientId === ing.id; })[0];
@@ -2918,7 +3040,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       try {
         var db = JSON.parse(reader.result);
         if (!db.ingredientes || !db.formulas) throw new Error("formato");
-        db.version = 2;
+        db.version = 3;
         S.db = db;
         if (!byId(S.db.formulas, S.db.activeFormulaId) && S.db.formulas[0]) S.db.activeFormulaId = S.db.formulas[0].id;
         save();

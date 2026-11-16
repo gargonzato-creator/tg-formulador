@@ -1,4 +1,4 @@
-const CACHE = "formulador-tg-v3";
+const CACHE = "formulador-tg-v4";
 const ASSETS = ["./index.html", "./manifest.webmanifest", "./icon-180.png", "./icon-512.png"];
 
 self.addEventListener("install", function (event) {
