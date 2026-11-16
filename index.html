@@ -651,7 +651,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     }),
     ing({
       id: "vilomix-bov",
-      nombre: "Vilomix bovino",
+      nombre: "Núcleo Vilomix",
       marca: "Vilomix",
       grupo: "Núcleos",
       ms: 98,
@@ -663,7 +663,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       p: 4,
       almidon: 0,
       orden: 11,
-      uso: "bovino",
+      uso: "general",
       ancla: "bolsa",
       bolsaGs: 200000,
       bolsaKg: 25,
@@ -672,7 +672,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       precioNota:
         "Gs 200.000 por bolsa. El kilaje está pendiente: 25 kg por defecto. No es el Ovinomix 700.",
       fuente:
-        "Núcleo bovino que usa Rancho Rufino. Sin garantías cargadas: Ca y P son provisorios. Es un insumo distinto del Ovinomix 700 ovino.",
+        "Lo usan en bovinos y en ovinos, en Rancho Rufino y en la Cabaña María Elena. Sin garantías cargadas: Ca y P son provisorios. Es un insumo distinto del Ovinomix 700.",
       nota: "Cuando confirmes el tamaño de la bolsa, cambiá los kg y el precio por kg se recalcula.",
     }),
     ing({
@@ -777,10 +777,10 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       uso: "ovino",
       ancla: "kg",
       precioGsKg: 9000,
-      precioNota: "Referencia histórica Gs 9.000/kg, sin fecha. No es el Vilomix bovino.",
+      precioNota: "Referencia histórica Gs 9.000/kg, sin fecha. No es el Núcleo Vilomix.",
       fuente:
         "Núcleo ovino anterior de la Cabaña María Elena. No hay garantías del núcleo puro: PB, NDT, Ca y P son provisorios para poder formular. Inclusión histórica 4–5 %.",
-      nota: "Distinto del Vilomix bovino de Rancho Rufino (bolsa de Gs 200.000).",
+      nota: "Distinto del Núcleo Vilomix (bolsa de Gs 200.000), que se usa en bovinos y en ovinos.",
     }),
   ];
 
@@ -1252,7 +1252,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
           id: "rufino",
           nombre: "Rancho Rufino",
           establecimiento: "Rancho Rufino",
-          notas: "Confinamiento. Núcleo bovino habitual: Vilomix (bolsa). Las dietas precargadas usan Nutrix como en la planilla Granusa; se puede sustituir.",
+          notas: "Bovinos de corral y también ovinos. El Núcleo Vilomix se usa en las dos especies. Las dietas precargadas de corral usan Nutrix como en la planilla Granusa.",
         },
         {
           id: "maria-elena",
@@ -1590,7 +1590,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
         nivel: "bad",
         titulo: "Núcleo de bovino en una ración ovina",
         texto:
-          "Los ovinos son sensibles al cobre. Nutrix y Vilomix bovino no están pensados para ovejas. Usá Ovinofós o Ovinomix.",
+          "Los ovinos son sensibles al cobre. Nutrix Beef es un núcleo de bovinos. Para ovejas usá Ovinofós, Ovinomix o el Núcleo Vilomix si es el del establecimiento.",
       });
     }
     if (cat && cat.especie === "ovino") {
@@ -1636,12 +1636,12 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
           ovinofos: [4, 6],
           ovinomix: [0, 6],
           "silo-maiz": [0, 0],
-          "cap-60": [0, 0],
-          "cap-90": [0, 0],
-          "cap-120": [0, 0],
+          "cap-60": [0, 40],
+          "cap-90": [0, 40],
+          "cap-120": [0, 40],
           bagazo: [0, 0],
           nutrix: [0, 0],
-          "vilomix-bov": [0, 0],
+          "vilomix-bov": [0, 5],
         }
       : {
           maiz: [25, 75],
@@ -1678,6 +1678,9 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     }
     if (cat && (cat.id === "ovi-creep" || cat.id === "ovi-cordero")) {
       tabla.ddgs = [0, 15];
+      tabla["cap-60"] = [0, 20];
+      tabla["cap-90"] = [0, 20];
+      tabla["cap-120"] = [0, 20];
     }
     return tabla;
   }
@@ -2076,10 +2079,8 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     html += segBtn("especie", "bovino", "Bovinos", especie);
     html += segBtn("especie", "ovino", "Ovinos", especie);
     html += "</div>";
-    html += selectField("categoriaId", "Categoría", cats.map(function (c) {
-      return { id: c.id, nombre: c.nombre };
-    }), f.categoriaId);
-    html += '<p class="sub">Requerimiento: PB ' + fmt(req.pb, 1) + " % · NDT " + fmt(req.ndt, 0) + " % · Ca " + fmt(req.ca, 2) + " · P " + fmt(req.p, 2) + " · consumo " + (cat && cat.imsModo === "kg" ? fmt(cat.imsKg, 2) + " kg MS" : fmt(req.imsPct, 2) + " % del peso") + ".</p>";
+    html += selectCategorias(f);
+    html += '<p class="sub">El cliente no fija la especie: en la lista están bovinos y ovinos. Requerimiento: PB ' + fmt(req.pb, 1) + " % · NDT " + fmt(req.ndt, 0) + " % · Ca " + fmt(req.ca, 2) + " · P " + fmt(req.p, 2) + " · consumo " + (cat && cat.imsModo === "kg" ? fmt(cat.imsKg, 2) + " kg MS" : fmt(req.imsPct, 2) + " % del peso") + ".</p>";
     if (f.consumoFicha) html += '<div class="alert info"><b>Consumo de la ficha.</b> ' + esc(f.consumoFicha) + ".</div>";
     html += '<div class="grid-3">';
     html += numField("pv", "Peso vivo, kg", f.pv);
@@ -2132,6 +2133,19 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
   }
   function numField(bind, label, value) {
     return '<label class="f"><span>' + esc(label) + '</span><input inputmode="decimal" autocomplete="off" autocorrect="off" spellcheck="false" data-fid="' + bind + '" data-bind="' + bind + '" value="' + campoNum(value) + '"></label>';
+  }
+  function selectCategorias(f) {
+    var html = '<label class="f"><span>Categoría</span><select data-bind="categoriaId">';
+    [["bovino", "Bovinos"], ["ovino", "Ovinos"]].forEach(function (g) {
+      var lista = categoriasVisibles().filter(function (c) { return c.especie === g[0]; });
+      if (!lista.length) return;
+      html += '<optgroup label="' + esc(g[1]) + '">';
+      lista.forEach(function (c) {
+        html += '<option value="' + esc(c.id) + '"' + (c.id === f.categoriaId ? " selected" : "") + ">" + esc(c.nombre) + "</option>";
+      });
+      html += "</optgroup>";
+    });
+    return html + "</select></label>";
   }
   function selectField(bind, label, opts, value) {
     return (
