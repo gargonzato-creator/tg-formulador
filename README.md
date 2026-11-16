@@ -1,2 +1,1 @@
-# tg-formulador
-Formulador de raciones (app estática)
+Formulador TG — app estática para abrir en el navegador.
