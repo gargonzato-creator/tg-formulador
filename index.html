@@ -4,8 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Formulador TG">
 <meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Formulador TG">
+<meta name="format-detection" content="telephone=no">
 <meta name="theme-color" content="#1b3c31">
 <title>TG · Formulación de raciones</title>
 <link rel="manifest" href="manifest.webmanifest">
@@ -191,9 +193,11 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
 }
 @media print {
   body { background: white; }
-  #app-ui .top, #app-ui .nav, #app-ui .no-print, .toast, .modal { display: none !important; }
+  #app-ui .top, #app-ui .nav, #app-ui .no-print, .toast, .modal, .btn, .btn-ghost, .btn-bad { display: none !important; }
   #app-ui, .screen { max-width: none; padding: 0; }
-  .sheet { box-shadow: none; }
+  .sheet { box-shadow: none; border-radius: 0; }
+  .sheet tr, .sheet h2 { break-inside: avoid; page-break-inside: avoid; }
+  .sheet table { width: 100%; }
   .card { box-shadow: none; }
 }
 
@@ -1378,7 +1382,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     var agua = Math.max(0, Number(formula.aguaL) || 0);
     var kgMo = kgMoSeco + agua;
     filas.forEach(function (f) {
-      f.pctMo = kgMoSeco > 0 ? (f.kgMo / kgMoSeco) * 100 : 0;
+      f.pctMo = kgMo > 0 ? (f.kgMo / kgMo) * 100 : 0;
     });
     filas.sort(function (a, b) {
       return a.orden - b.orden || a.nombre.localeCompare(b.nombre, "es");
@@ -1406,7 +1410,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     }
 
     var cargaFilas = filas.map(function (f) {
-      var parte = kgMoSeco > 0 ? f.kgMo / kgMoSeco : 0;
+      var parte = kgMo > 0 ? f.kgMo / kgMo : 0;
       var kgCarga = carga * parte;
       var e = escala(f.kgMo);
       return {
@@ -1448,6 +1452,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       });
     }
 
+    ajustarKilosDeCarga(cargaFilas, carga);
     var animalesPorCarga = kgMo > 0 && carga > 0 ? carga / kgMo : 0;
 
     return {
@@ -1502,7 +1507,13 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
   function alertas(formula, res) {
     var out = [];
     var sum = res.sumPct;
-    if (Math.abs(sum - 100) > 0.15) {
+    if (sum <= 0) {
+      out.push({
+        nivel: "mid",
+        titulo: "Sin porcentajes",
+        texto: "Cargá el porcentaje de cada insumo. En cero, la ración no tiene composición.",
+      });
+    } else if (Math.abs(sum - 100) > 0.15) {
       out.push({
         nivel: "mid",
         titulo: "Los porcentajes no cierran en 100",
@@ -1612,8 +1623,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     return out;
   }
 
-  function sugerirLimites(formula, db) {
-    var cat = byId(db.categorias, formula.categoriaId);
+  function tablaLimites(cat) {
     var ovino = cat && cat.especie === "ovino";
     var tabla = ovino
       ? {
@@ -1624,8 +1634,11 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
           arroz: [0, 12],
           calcareo: [1, 2.5],
           ovinofos: [4, 6],
-          ovinomix: [0, 0],
+          ovinomix: [0, 6],
           "silo-maiz": [0, 0],
+          "cap-60": [0, 0],
+          "cap-90": [0, 0],
+          "cap-120": [0, 0],
           bagazo: [0, 0],
           nutrix: [0, 0],
           "vilomix-bov": [0, 0],
@@ -1656,18 +1669,39 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       tabla["cap-120"] = [0, 0];
     }
     if (cat && cat.id === "bov-adap") {
+      tabla.maiz = [20, 50];
+      tabla.bagazo = [12, 35];
+      tabla["silo-maiz"] = [10, 35];
       tabla["cap-60"] = [0, 0];
       tabla["cap-90"] = [0, 0];
       tabla["cap-120"] = [0, 0];
     }
-    if (cat && cat.id === "bov-adap") {
-      tabla.maiz = [20, 50];
-      tabla.bagazo = [12, 35];
-      tabla["silo-maiz"] = [10, 35];
-    }
     if (cat && (cat.id === "ovi-creep" || cat.id === "ovi-cordero")) {
       tabla.ddgs = [0, 15];
     }
+    return tabla;
+  }
+
+  function usoCompatible(ing, especie) {
+    var uso = (ing && ing.uso) || "ambos";
+    if (uso === "general") uso = "ambos";
+    if (!especie || uso === "ambos") return true;
+    return uso === especie;
+  }
+
+  function insumoOfrecido(ing, cat) {
+    if (!ing || ing.activo === false) return false;
+    if (ing.id === "agua" || !(ing.ms > 0)) return false;
+    if (!cat) return true;
+    if (!usoCompatible(ing, cat.especie)) return false;
+    var rango = tablaLimites(cat)[ing.id];
+    if (rango && rango[1] <= 0) return false;
+    return true;
+  }
+
+  function sugerirLimites(formula, db) {
+    var cat = byId(db.categorias, formula.categoriaId);
+    var tabla = tablaLimites(cat);
     formula.items.forEach(function (it) {
       var rango = tabla[it.ingredientId];
       var ing = byId(db.ingredientes, it.ingredientId);
@@ -1690,9 +1724,11 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
   function optimizar(formula, db) {
     var tc = db.settings.tipoCambio || 6180;
     var usados = [];
+    var catOpt = byId(db.categorias, formula.categoriaId);
     (formula.items || []).forEach(function (it) {
       var ing = byId(db.ingredientes, it.ingredientId);
       if (!ing || !it.usar || ing.ms <= 0) return;
+      if (catOpt && !insumoOfrecido(ing, catOpt) && !(it.pct > 0)) return;
       var max = Number(it.max);
       if (!(max > 0)) return;
       usados.push({ it: it, ing: ing });
@@ -1790,6 +1826,31 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     return { ok: true, costoKgMs: res.value, texto: "Listo. La mezcla de menor costo ya está cargada. Podés pasarla a manual para retocar un porcentaje." };
   }
 
+  function ajustarKilosDeCarga(filas, carga) {
+    if (!(carga > 0) || !filas.length) return;
+    var objetivo = Math.round(carga * 10) / 10;
+    var suma = 0;
+    var mayor = 0;
+    for (var i = 0; i < filas.length; i++) {
+      filas[i].kgCarga = Math.round((Number(filas[i].kgCarga) || 0) * 10) / 10;
+      suma += filas[i].kgCarga;
+      if (filas[i].kgCarga > filas[mayor].kgCarga) mayor = i;
+    }
+    var drift = Math.round((objetivo - suma) * 10) / 10;
+    filas[mayor].kgCarga = Math.round((filas[mayor].kgCarga + drift) * 10) / 10;
+    if (filas[mayor].kgCarga < 0) filas[mayor].kgCarga = 0;
+  }
+
+  function parseNum(s) {
+    if (typeof s === "number") return s;
+    var t = String(s == null ? "" : s).trim().replace(/\s/g, "");
+    if (!t || t === "-" || t === "," || t === ".") return null;
+    if (t.indexOf(",") >= 0 && t.indexOf(".") >= 0) t = t.replace(/\./g, "").replace(",", ".");
+    else if (t.indexOf(",") >= 0) t = t.replace(",", ".");
+    var n = Number(t);
+    return isFinite(n) ? n : null;
+  }
+
   function zeros(n) {
     var a = [];
     for (var i = 0; i < n; i++) a.push(0);
@@ -1827,7 +1888,11 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     alertas: alertas,
     optimizar: optimizar,
     sugerirLimites: sugerirLimites,
+    tablaLimites: tablaLimites,
+    insumoOfrecido: insumoOfrecido,
+    usoCompatible: usoCompatible,
     cerrarEn100: cerrarEn100,
+    parseNum: parseNum,
     byId: byId,
   };
 })(typeof globalThis !== "undefined" ? globalThis : this);
@@ -1884,7 +1949,10 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       var raw = localStorage.getItem(KEY);
       if (raw) {
         var db = JSON.parse(raw);
-        if (db && db.version === 2 && db.ingredientes && db.formulas) return db;
+        if (db && (db.version === 1 || db.version === 2) && db.ingredientes && db.formulas) {
+          db.version = 2;
+          return db;
+        }
       }
     } catch (e) {}
     return root.TGData.crearBase();
@@ -2056,8 +2124,14 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
   function segBtn(act, val, label, on) {
     return '<button type="button" data-act="' + act + '" data-val="' + esc(val) + '" class="' + (on ? "on" : "") + '">' + esc(label) + "</button>";
   }
+  function campoNum(n) {
+    if (n == null || n === "") return "";
+    var x = Number(n);
+    if (!isFinite(x)) return "";
+    return esc(String(Math.round(x * 10000) / 10000).replace(".", ","));
+  }
   function numField(bind, label, value) {
-    return '<label class="f"><span>' + esc(label) + '</span><input inputmode="decimal" data-fid="' + bind + '" data-bind="' + bind + '" value="' + esc(value == null ? "" : String(value)) + '"></label>';
+    return '<label class="f"><span>' + esc(label) + '</span><input inputmode="decimal" autocomplete="off" autocorrect="off" spellcheck="false" data-fid="' + bind + '" data-bind="' + bind + '" value="' + campoNum(value) + '"></label>';
   }
   function selectField(bind, label, opts, value) {
     return (
@@ -2070,15 +2144,18 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
   }
 
   function bloqueManual(f) {
+    var cat = catDe(f);
     var usados = [];
     var libres = [];
     S.db.ingredientes.forEach(function (ing) {
       if (!ing.activo || ing.id === "agua") return;
       var it = (f.items || []).filter(function (x) { return x.ingredientId === ing.id; })[0];
-      if (it && it.usar) usados.push(ing);
-      else libres.push(ing);
+      var enFormula = it && it.usar && Number(it.pct) > 0;
+      if (enFormula) usados.push(ing);
+      else if (root.TGRation.insumoOfrecido(ing, cat)) libres.push(ing);
     });
-    var html = '<div class="card"><h2>Porcentaje sobre materia seca</h2><p class="sub">Como en la planilla: cada número es % de la MS. La suma tiene que dar 100.</p>';
+    var especieTxt = cat && cat.especie === "ovino" ? "ovinos" : "bovinos";
+    var html = '<div class="card"><h2>Porcentaje sobre materia seca</h2><p class="sub">Como en la planilla: cada número es % de la MS. La suma tiene que dar 100. Para sumar, solo ves insumos de ' + especieTxt + '.</p>';
     if (!usados.length) html += '<p>Todavía no hay insumos en la fórmula.</p>';
     usados.forEach(function (ing) {
       var it = itemDe(f, ing.id);
@@ -2087,7 +2164,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       if (ing.precioNota) html += " · " + esc(ing.precioNota);
       html += "</p></div>";
       html += '<div class="step"><button type="button" data-act="step" data-id="' + ing.id + '" data-dir="-1" aria-label="Bajar">−</button>';
-      html += '<input inputmode="decimal" data-fid="pct-' + ing.id + '" data-bind="pct" data-id="' + ing.id + '" value="' + esc(String(it.pct)) + '">';
+      html += '<input inputmode="decimal" autocomplete="off" autocorrect="off" spellcheck="false" data-fid="pct-' + ing.id + '" data-bind="pct" data-id="' + ing.id + '" value="' + campoNum(it.pct) + '">';
       html += '<button type="button" data-act="step" data-id="' + ing.id + '" data-dir="1" aria-label="Subir">+</button></div></div>';
     });
     html += '<button class="btn" type="button" data-act="cerrar100">Cerrar los % en 100</button>';
@@ -2103,22 +2180,24 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
   }
 
   function bloqueMinimo(f) {
-    var html = '<div class="card"><h2>Mínimos y máximos</h2><p class="sub">El programa busca la mezcla más barata que entre en estos topes y en los de la categoría. Tocá «Sugerir límites» si partís de cero.</p>';
+    var cat = catDe(f);
+    var especieTxt = cat && cat.especie === "ovino" ? "ovinos" : "bovinos";
+    var html = '<div class="card"><h2>Mínimos y máximos</h2><p class="sub">El programa busca la mezcla más barata que entre en estos topes y en los de la categoría. Tocá «Sugerir límites» si partís de cero. Solo ves insumos de ' + especieTxt + '.</p>';
     html += '<button class="btn-ghost" type="button" data-act="sugerir">Sugerir límites de esta categoría</button>';
     var grupos = [];
     S.db.ingredientes.forEach(function (ing) {
-      if (!ing.activo || ing.ms <= 0) return;
+      if (!visibleEnMinimo(ing, f, cat)) return;
       if (grupos.indexOf(ing.grupo) < 0) grupos.push(ing.grupo);
     });
     grupos.forEach(function (g) {
       html += "<h3>" + esc(g) + "</h3>";
       S.db.ingredientes.forEach(function (ing) {
-        if (ing.grupo !== g || !ing.activo || ing.ms <= 0) return;
+        if (ing.grupo !== g || !visibleEnMinimo(ing, f, cat)) return;
         var it = itemDe(f, ing.id);
         html += '<div class="ing"><div><label class="check"><input type="checkbox" data-bind="usar" data-id="' + ing.id + '"' + (it.usar ? " checked" : "") + "><span>" + esc(ing.nombre) + "</span></label>";
         html += "<p>" + gs(root.TGRation.precioKg(ing, S.db.settings.tipoCambio)) + "/kg</p></div>";
-        html += '<div class="grid-2" style="min-width:150px"><label class="f"><span>Mín %</span><input inputmode="decimal" data-bind="min" data-id="' + ing.id + '" value="' + esc(String(it.min || 0)) + '"></label>';
-        html += '<label class="f"><span>Máx %</span><input inputmode="decimal" data-bind="max" data-id="' + ing.id + '" value="' + esc(String(it.max || 0)) + '"></label></div></div>';
+        html += '<div class="grid-2" style="min-width:150px"><label class="f"><span>Mín %</span><input inputmode="decimal" autocomplete="off" data-bind="min" data-id="' + ing.id + '" value="' + campoNum(it.min || 0) + '"></label>';
+        html += '<label class="f"><span>Máx %</span><input inputmode="decimal" autocomplete="off" data-bind="max" data-id="' + ing.id + '" value="' + campoNum(it.max || 0) + '"></label></div></div>';
       });
     });
     html += limitesNutrientes(f);
@@ -2133,7 +2212,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     function par(key, label) {
       var o = L[key] || { min: "", max: "" };
       return (
-        "<tr><td>" + esc(label) + '</td><td class="num"><input inputmode="decimal" data-bind="lim-min" data-nut="' + key + '" value="' + esc(o.min == null ? "" : o.min) + '"></td><td class="num"><input inputmode="decimal" data-bind="lim-max" data-nut="' + key + '" value="' + esc(o.max == null ? "" : o.max) + '"></td></tr>'
+        "<tr><td>" + esc(label) + '</td><td class="num"><input inputmode="decimal" autocomplete="off" data-bind="lim-min" data-nut="' + key + '" value="' + campoNum(o.min) + '"></td><td class="num"><input inputmode="decimal" autocomplete="off" data-bind="lim-max" data-nut="' + key + '" value="' + campoNum(o.max) + '"></td></tr>'
       );
     }
     return (
@@ -2174,7 +2253,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     html += "</tbody></table></div>";
     html += "<h2>Mixer y necesidades</h2>";
     html += '<div class="card"><p>Carga de <b>' + fmt(res.cargaKg, 0) + " kg</b> tal cual. Alcanza para unas <b>" + fmt(res.animalesPorCarga, 1) + "</b> cabezas de una comida. Tratos por día: <b>" + res.tratos + "</b>. Oferta por trato: " + fmt(res.ofertaTratoMo, 2) + " kg tal cual.</p>";
-    html += "<p class=\"sub\">Orden de carga: fibra primero, silos después, concentrados y el núcleo al final. Se cambia en cada insumo.</p>";
+    html += "<p class=\"sub\">Orden de carga: fibra primero, silos después, concentrados y el núcleo al final. Lo cambiás en cada insumo. Los kilos de la carga están redondeados a 100 g y cierran con el total del mixer.</p>";
     html += '<div style="overflow-x:auto"><table><thead><tr><th>Orden</th><th>Insumo</th><th class="num">En la carga</th><th class="num">Día</th><th class="num">Semana</th><th class="num">Mes</th><th class="num">Gs / día</th></tr></thead><tbody>';
     res.cargaFilas.forEach(function (r, i) {
       html += "<tr><td>" + (i + 1) + "</td><td>" + esc(r.nombre) + "</td><td class=\"num\">" + fmt(r.kgCarga, 1) + "</td><td class=\"num\">" + fmt(r.dia, 1) + "</td><td class=\"num\">" + fmt(r.semana, 0) + "</td><td class=\"num\">" + fmt(r.mes, 0) + "</td><td class=\"num\">" + gs(r.costoDia) + "</td></tr>";
@@ -2315,7 +2394,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     html += numIng("ureaPct", "Urea en el insumo, %", ing.ureaPct);
     html += '<label class="check"><input type="checkbox" data-bind="ing-flag" data-nut="contieneMonensina"' + (ing.contieneMonensina ? " checked" : "") + "><span>Contiene monensina</span></label>";
     html += numIng("monensinaMgKg", "Monensina, mg/kg de insumo", ing.monensinaMgKg);
-    html += '<label class="f"><span>Uso</span><select data-bind="ing-uso"><option value="general"' + (ing.uso === "general" ? " selected" : "") + '>General</option><option value="bovino"' + (ing.uso === "bovino" ? " selected" : "") + '>Bovinos</option><option value="ovino"' + (ing.uso === "ovino" ? " selected" : "") + ">Ovinos</option></select></label>";
+    html += '<label class="f"><span>Uso</span><select data-bind="ing-uso"><option value="general"' + (ing.uso === "general" || ing.uso === "ambos" || !ing.uso ? " selected" : "") + ">Bovinos y ovinos</option><option value=\"bovino\"" + (ing.uso === "bovino" ? " selected" : "") + ">Bovinos</option><option value=\"ovino\"" + (ing.uso === "ovino" ? " selected" : "") + ">Ovinos</option></select></label>";
     html += numIng("orden", "Orden de carga en el mixer", ing.orden);
     html += '<label class="f"><span>Nota</span><textarea data-bind="ing-nota">' + esc(ing.nota || "") + "</textarea></label>";
     html += "</div>";
@@ -2655,7 +2734,22 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     else if (["pv", "gmd", "cabezas", "imsPct", "imsKg", "imsGPorKg", "tratos", "cargaKg", "aguaL"].indexOf(bind) >= 0) {
       var n = parseNum(v);
       if (n != null) f[bind] = n;
-    } else if (bind === "clienteId" || bind === "categoriaId") f[bind] = v;
+    } else if (bind === "clienteId" || bind === "categoriaId") {
+      f[bind] = v;
+      if (bind === "clienteId" && sumaCargada(f) === 0) {
+        var destino = v === "maria-elena" ? "ovi-cordero" : v === "rufino" ? "bov-adap" : "";
+        var catNueva = destino ? byId(S.db.categorias, destino) : null;
+        if (catNueva) {
+          f.categoriaId = catNueva.id;
+          f.pv = catNueva.pv;
+          f.gmd = catNueva.gmd;
+          f.imsPct = catNueva.req.imsPct;
+          f.imsModo = catNueva.imsModo || "pct";
+          f.imsKg = catNueva.imsModo === "kg" ? catNueva.imsKg : Math.round(catNueva.pv * catNueva.req.imsPct) / 100;
+          f.limites = root.TGData.limitesDesde(catNueva);
+        }
+      }
+    }
     else if (bind === "pct" || bind === "min" || bind === "max") {
       var it = itemDe(f, el.getAttribute("data-id"));
       var n2 = parseNum(v);
@@ -2740,6 +2834,15 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     if (bind === "cli-notas") c.notas = v;
   }
 
+  function visibleEnMinimo(ing, f, cat) {
+    if (!ing || !ing.activo || !(ing.ms > 0)) return false;
+    var it = (f.items || []).filter(function (x) { return x.ingredientId === ing.id; })[0];
+    if (it && it.usar && Number(it.pct) > 0) return true;
+    return root.TGRation.insumoOfrecido(ing, cat);
+  }
+  function sumaCargada(f) {
+    return (f.items || []).reduce(function (a, it) { return a + (Number(it.pct) > 0 ? Number(it.pct) : 0); }, 0);
+  }
   function pintarVivo() {
     var box = document.getElementById("live");
     if (!box) return;
@@ -2801,7 +2904,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       try {
         var db = JSON.parse(reader.result);
         if (!db.ingredientes || !db.formulas) throw new Error("formato");
-        db.version = 1;
+        db.version = 2;
         S.db = db;
         if (!byId(S.db.formulas, S.db.activeFormulaId) && S.db.formulas[0]) S.db.activeFormulaId = S.db.formulas[0].id;
         save();
