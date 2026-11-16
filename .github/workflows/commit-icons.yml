@@ -1,0 +1,35 @@
+name: Commit PNG icons
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  commit-icons:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Decode icons and commit
+        run: |
+          python3 - <<'PY'
+          import base64, pathlib
+          for name in ("icon-180.png", "icon-512.png"):
+              src = pathlib.Path(name + ".b64")
+              pathlib.Path(name).write_bytes(base64.b64decode(src.read_text().strip()))
+              print("wrote", name, pathlib.Path(name).stat().st_size)
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add icon-180.png icon-512.png
+          if git diff --cached --quiet; then
+            echo "Icons already committed"
+          else
+            git commit -m "Add decoded PNG icons"
+            git push
+          fi
