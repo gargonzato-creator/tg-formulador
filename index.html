@@ -9,6 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="Formulador TG">
 <meta name="format-detection" content="telephone=no">
 <meta name="theme-color" content="#1b3c31">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%231b3c31'/%3E%3C/svg%3E">
 <title>TG · Formulación de raciones</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -637,6 +638,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       almidon: 0,
       orden: 10,
       uso: "bovino",
+      sinRotulo: true,
       contieneUrea: true,
       ureaPct: 0,
       contieneMonensina: true,
@@ -664,6 +666,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       almidon: 0,
       orden: 11,
       uso: "general",
+      sinRotulo: true,
       ancla: "bolsa",
       bolsaGs: 200000,
       bolsaKg: 25,
@@ -775,6 +778,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       almidon: 0,
       orden: 13,
       uso: "ovino",
+      sinRotulo: true,
       ancla: "kg",
       precioGsKg: 9000,
       precioNota: "Referencia histórica Gs 9.000/kg, sin fecha. No es el Núcleo Vilomix.",
@@ -825,7 +829,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       grupo: "Confinamiento",
       pv: 420,
       gmd: 1,
-      req: { pb: 13, ndt: 68, ca: 0.5, p: 0.25, imsPct: 2.31, fdnMin: 30, almMax: 40, concMax: 70, caPMin: 1.5 },
+      req: { pb: 13, ndt: 68, ca: 0.5, p: 0.25, imsPct: 2.3, fdnMin: 30, almMax: 40, concMax: 70, caPMin: 1.5 },
     }),
     cat({
       id: "bov-trans",
@@ -947,7 +951,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     var categoria = categorias.filter(function (c) {
       return c.id === p.categoriaId;
     })[0];
-    return Object.assign(
+    var out = Object.assign(
       {
         modo: "manual",
         cabezas: 1,
@@ -956,18 +960,84 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
         aguaL: 0,
         items: [],
         limites: limitesDesde(categoria),
-        notas: "",
+        notasInternas: "",
+        observaciones: "",
         referencia: null,
       },
       p
     );
+    if (out.notas && !out.notasInternas) out.notasInternas = out.notas;
+    delete out.notas;
+    return out;
   }
 
   var formulas = [
     formula({
-      id: "rufino-adap",
+      id: "rufino-ficha-adap",
       clienteId: "rufino",
       nombre: "Adaptación con bagazo",
+      fecha: "2026-11-16",
+      categoriaId: "bov-adap",
+      pv: 0,
+      gmd: 0,
+      cabezas: 128,
+      imsModo: "kg",
+      imsKg: 9.443984,
+      imsPct: 0,
+      tratos: 3,
+      cargaKg: 600,
+      aguaL: 3.798047,
+      comidas: [
+        { nombre: "Mañana", kg: 600 },
+        { nombre: "Mediodía", kg: 600 },
+        { nombre: "Noche", kg: 900 },
+      ],
+      ficha: "Ficha de mezcla Rufino 16/11/2026",
+      notasInternas:
+        "Corrales 1, 2 y 4. La planilla sumaba 128 cabezas (90 + 38). El corral 4 pasó a 42: el lote de hoy es 132. La oferta por cabeza está calculada sobre 2.100 kg/día y 128 cabezas. Los tres tratos no son iguales: 600, 600 y 900 kg.",
+      observaciones: "",
+      items: [
+        fila("bagazo", 30.1132, 15, 45),
+        fila("maiz", 34.1676, 15, 50),
+        fila("ddgs", 32.8036, 10, 45),
+        fila("nutrix", 2.9156, 1, 5),
+      ],
+    }),
+    formula({
+      id: "rufino-ficha-recria",
+      clienteId: "rufino",
+      nombre: "Recría · Mezcla 2",
+      fecha: "2026-11-16",
+      categoriaId: "bov-recria",
+      pv: 0,
+      gmd: 0,
+      cabezas: 106,
+      imsModo: "kg",
+      imsKg: 6.318281,
+      imsPct: 0,
+      tratos: 3,
+      cargaKg: 385,
+      aguaL: 3.176123,
+      comidas: [
+        { nombre: "Mañana", kg: 385 },
+        { nombre: "Mediodía", kg: 385 },
+        { nombre: "Tarde-noche", kg: 534 },
+      ],
+      ficha: "Ficha de mezcla Rufino 16/11/2026",
+      notasInternas:
+        "Dos corrales, 47 + 59 = 106 cabezas. Total del día 1.304 kg tal cual. Los tratos son 385, 385 y 534 kg, no tres partes iguales. La carga de 385 kg es la de mañana y mediodía.",
+      observaciones: "",
+      items: [
+        fila("bagazo", 46.2003, 20, 60),
+        fila("maiz", 15.0867, 0, 30),
+        fila("ddgs", 35.7824, 15, 50),
+        fila("nutrix", 2.9307, 1, 5),
+      ],
+    }),
+    formula({
+      id: "rufino-granusa",
+      clienteId: "rufino",
+      nombre: "Referencia informe Granusa 28/08",
       fecha: "2026-08-28",
       categoriaId: "bov-adap",
       pv: 420,
@@ -979,7 +1049,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       tratos: 2,
       cargaKg: 1000,
       notas:
-        "Dieta de trabajo armada para reproducir el informe RLM de Granusa del 28/08/2026: 9,7 kg MS y 16,3 kg de materia original por cabeza, cerca de USD 134,75 por tonelada tal cual. Los porcentajes no salen de una copia celda a celda de la planilla (ese archivo no estuvo disponible al armar la app): cerralos con la planilla si la tenés a mano. Núcleo: Nutrix. El Vilomix bovino de Rufino está en la biblioteca por si lo sustituís.",
+        "Referencia del informe de Granusa del 28/08/2026, con el bagazo al 50 % de MS de esa fecha. No es la mezcla que se carga hoy. El núcleo de esa referencia es Nutrix.",
       items: [
         fila("bagazo", 22, 10, 35),
         fila("silo-maiz", 19, 8, 35),
@@ -993,7 +1063,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     formula({
       id: "rufino-trans",
       clienteId: "rufino",
-      nombre: "Transición",
+      nombre: "Referencia Granusa · Transición 07/09",
       fecha: "2026-09-07",
       categoriaId: "bov-trans",
       pv: 450,
@@ -1017,7 +1087,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     formula({
       id: "rufino-term",
       clienteId: "rufino",
-      nombre: "Terminación",
+      nombre: "Referencia Granusa · Terminación 07/09",
       fecha: "2026-09-07",
       categoriaId: "bov-term",
       pv: 500,
@@ -1041,7 +1111,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     formula({
       id: "rufino-recria",
       clienteId: "rufino",
-      nombre: "Recría",
+      nombre: "Referencia Granusa · Recría 07/09",
       fecha: "2026-09-07",
       categoriaId: "bov-recria",
       pv: 280,
@@ -1243,8 +1313,8 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
 
   function crearBase() {
     return {
-      version: 3,
-      settings: { tipoCambio: 6180, lecheria: false },
+      version: 5,
+      settings: { tipoCambio: 6180, lecheria: false, mostrarCostos: false },
       ingredientes: ingredientes,
       categorias: categorias,
       clientes: [
@@ -1263,7 +1333,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       ],
       formulas: formulas,
       notas: notas,
-      activeFormulaId: "rufino-adap",
+      activeFormulaId: "rufino-ficha-adap",
     };
   }
 
@@ -1361,7 +1431,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       monensina += frac * (ing.monensinaMgKg || 0);
       if (ing.contieneUrea && L.pct > 0) hayUrea = true;
       if (ing.contieneMonensina && L.pct > 0) hayMonensina = true;
-      if (ing.uso === "bovino" && ing.grupo === "Núcleos" && L.pct > 0) nucleoBovino = true;
+      if (ing.id === "nutrix" && L.pct > 0) nucleoBovino = true;
       filas.push({
         id: ing.id,
         nombre: ing.nombre,
@@ -1506,6 +1576,8 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
 
   function alertas(formula, res) {
     var out = [];
+    var cat = res.cat;
+    var usaOvinofos = res.filas.some(function (f) { return f.id === "ovinofos"; });
     var sum = res.sumPct;
     if (sum <= 0) {
       out.push({
@@ -1527,17 +1599,19 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     if (res.nut.almidon > req.almMax) {
       out.push({
         nivel: "bad",
+        cliente: true,
         titulo: "Riesgo de acidosis por almidón",
         texto:
           "El almidón estimado (" +
           res.nut.almidon.toFixed(1).replace(".", ",") +
-          " % de MS) pasa el tope de esta categoría (" +
+          " % de la MS) pasa el tope de esta categoría (" +
           req.almMax +
-          " %). Bajá maíz o subí fibra larga (bagazo o silo) y revisá la lectura de comedero.",
+          " %). Bajá el grano o subí forraje y mirá el comedero.",
       });
     } else if (req.almMax && res.nut.almidon > req.almMax - 8) {
       out.push({
         nivel: "mid",
+        cliente: true,
         titulo: "Almidón cerca del tope",
         texto: "Conviene vigilar el comedero y no apurar el cambio de fase. El almidón está alto para esta categoría.",
       });
@@ -1545,6 +1619,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     if (res.conc > req.concMax) {
       out.push({
         nivel: "bad",
+        cliente: true,
         titulo: "Exceso de concentrado",
         texto:
           "El concentrado es " +
@@ -1554,25 +1629,39 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
           " %. Falta fibra efectiva.",
       });
     }
-    if (res.caP != null && res.caP < 1.2) {
-      out.push({
-        nivel: "bad",
-        titulo: "Relación calcio:fósforo muy baja",
-        texto: "Ca:P está por debajo de 1,2. Subí calcáreo o revisá el núcleo. Una relación baja complica consumo y hueso.",
-      });
-    } else if (res.caP != null && res.caP < (req.caPMin || 1.5)) {
+    var mineralesSinRotulo = res.filas.some(function (f) {
+      return f.pctMs > 0 && (f.id === "nutrix" || f.id === "vilomix-bov" || f.id === "ovinomix");
+    });
+    var tieneCalcareo = res.filas.some(function (f) { return f.id === "calcareo" && f.pctMs > 0; });
+    if (res.caP != null && mineralesSinRotulo && !tieneCalcareo) {
       out.push({
         nivel: "mid",
+        titulo: "Calcio y fósforo del núcleo sin rótulo",
+        texto: "El Ca:P de la pantalla usa calcio y fósforo provisorios del núcleo, porque el rótulo no está cargado. No lo tomes como un dato del alimento hasta completar la ficha.",
+      });
+    } else if (res.caP != null && res.caP < 1.2) {
+      out.push({
+        nivel: "bad",
+        cliente: true,
+        titulo: "Relación calcio:fósforo muy baja",
+        texto: "Ca:P está por debajo de 1,2. Conviene subir calcáreo o revisar el núcleo. Una relación baja complica el consumo y el hueso.",
+      });
+    } else if (res.caP != null && res.caP < (req.caPMin || 1.5)) {
+      var extra = "";
+      if (cat && cat.especie === "ovino") extra = " En ovinos se busca cerca de 2. La ficha de Ovinofós trae de 2,09 a 2,70 según la columna.";
+      out.push({
+        nivel: "mid",
+        cliente: true,
         titulo: "Calcio:fósforo por debajo del objetivo",
         texto:
           "Ca:P es " +
           res.caP.toFixed(2).replace(".", ",") +
           " y el objetivo de la categoría es " +
           String(req.caPMin).replace(".", ",") +
-          ". En la ficha de Ovinofós el Ca:P va de 2,09 a 2,70 según la columna.",
+          "." +
+          extra,
       });
     }
-    var cat = res.cat;
     var joven =
       cat &&
       (cat.creep || cat.joven) &&
@@ -1580,6 +1669,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     if (joven && (res.hayUrea || res.hayMonensina || res.urea > 0.05 || res.monensina > 0)) {
       out.push({
         nivel: "bad",
+        cliente: true,
         titulo: "Urea o monensina en corderos muy jóvenes",
         texto:
           "Esta ración incluye urea y/o monensina del núcleo y la categoría es de corderos chicos o creep. La fórmula de fábrica del creep de Ovinofós las trae: confirmá en el rótulo la edad mínima y no la ofrezcas por debajo de esa edad.",
@@ -1588,23 +1678,23 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     if (cat && cat.especie === "ovino" && res.nucleoBovino) {
       out.push({
         nivel: "bad",
+        cliente: true,
         titulo: "Núcleo de bovino en una ración ovina",
         texto:
-          "Los ovinos son sensibles al cobre. Nutrix Beef es un núcleo de bovinos. Para ovejas usá Ovinofós, Ovinomix o el Núcleo Vilomix si es el del establecimiento.",
+          "Nutrix Beef es solo para bovinos y puede traer más cobre del que tolera el ovino. Para ovejas usá Ovinofós, Ovinomix 700 o el Núcleo Vilomix.",
       });
     }
-    if (cat && cat.especie === "ovino") {
+    if (usaOvinofos && cat && cat.especie === "ovino") {
       out.push({
         nivel: "info",
-        titulo: "Cobre y ovinos",
-        texto:
-          "El ovino tolera poco cobre. En las raciones Ovinofós al 5 % la ficha declara 7 mg de cobre por kg. No sumes sal mineral bovina ni Ovinofós Mineral dentro del balanceado: esa sal es solo a voluntad y trae 590 mg de cobre por kg.",
+        titulo: "Cobre",
+        texto: "La ficha de Ovinofós declara 7 mg de cobre por kg en las raciones al 5 %. El ovino tolera poco cobre: no mezcles Ovinofós Mineral en el balanceado. Esa sal es a voluntad y trae 590 mg de cobre por kg.",
       });
     }
-    var usaOvinofos = res.filas.some(function (f) { return f.id === "ovinofos"; });
     if (usaOvinofos) {
       out.push({
         nivel: "mid",
+        cliente: true,
         titulo: "Cobalto de la ficha",
         texto: "Co de ficha muy superior a lo habitual en ovinos; posible error de unidad del fabricante, consultar a Tortuga",
       });
@@ -1952,7 +2042,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       var raw = localStorage.getItem(KEY);
       if (raw) {
         var db = JSON.parse(raw);
-        if (db && db.ingredientes && db.formulas && (db.version === 1 || db.version === 2 || db.version === 3)) {
+        if (db && db.ingredientes && db.formulas && db.version >= 1 && db.version <= 5) {
           if (db.version < 3) {
             for (var bi = 0; bi < db.ingredientes.length; bi++) {
               if (db.ingredientes[bi].id === "bagazo" && Number(db.ingredientes[bi].ms) === 50) {
@@ -1961,7 +2051,26 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
               }
             }
           }
-          db.version = 3;
+          if (!db.settings) db.settings = {};
+          if (db.settings.mostrarCostos == null) db.settings.mostrarCostos = false;
+          db.formulas.forEach(function (fm) {
+            if (fm.notas && !fm.notasInternas) fm.notasInternas = fm.notas;
+            if (fm.notas) fm.notas = "";
+            if (fm.observaciones == null) fm.observaciones = "";
+          });
+          db.ingredientes.forEach(function (ing) {
+            if (ing.id === "vilomix-bov") {
+              ing.uso = "general";
+              ing.nombre = "Núcleo Vilomix";
+              ing.sinRotulo = true;
+            }
+            if (ing.id === "nutrix" || ing.id === "ovinomix") ing.sinRotulo = true;
+            if (ing.id === "bagazo" && Number(ing.ms) === 50) {
+              ing.ms = 55;
+              ing.nota = "MS 55 %, medida el 16/11/2026 en Rancho Rufino con freidora de aire. Antes, la planilla de agosto usaba 50 %.";
+            }
+          });
+          db.version = 5;
           return db;
         }
       }
@@ -2121,10 +2230,14 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     html += numField("cargaKg", "Carga del mixer, kg", f.cargaKg);
     html += "</div>";
     html += numField("aguaL", "Agua añadida, litros por cabeza", f.aguaL);
-    html += '<label class="f"><span>Notas</span><textarea data-fid="notas" data-bind="notas">' + esc(f.notas || "") + "</textarea></label>";
+    html += '<label class="f"><span>Notas internas</span><textarea data-fid="notasInternas" data-bind="notasInternas">' + esc(f.notasInternas || "") + "</textarea></label>";
+    html += '<p class="sub">Estas notas quedan en el aparato. No salen en el informe.</p>';
+    html += '<label class="f"><span>Observaciones para el cliente</span><textarea data-fid="observaciones" data-bind="observaciones">' + esc(f.observaciones || "") + "</textarea></label>";
+    html += '<p class="sub">Si escribís algo acá, sale en el informe. Si lo dejás vacío, no se imprime.</p>';
     html += "</div>";
     html += '<button class="btn" type="button" data-go="resultado">Ver resultado</button>';
     html += '<button class="btn-ghost" type="button" data-act="duplicar">Duplicar fórmula</button>';
+    html += '<button class="btn-bad" type="button" data-act="borrar-formula">Quitar esta fórmula</button>';
     return html;
   }
 
@@ -2275,7 +2388,11 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     if (res.agua > 0) html += '<tr><td>Agua</td><td class="num">—</td><td class="num">—</td><td class="num">0</td><td class="num">' + fmt(res.agua, 2) + "</td></tr>";
     html += "</tbody></table></div>";
     html += "<h2>Mixer y necesidades</h2>";
-    html += '<div class="card"><p>Carga de <b>' + fmt(res.cargaKg, 0) + " kg</b> tal cual. Alcanza para unas <b>" + fmt(res.animalesPorCarga, 1) + "</b> cabezas de una comida. Tratos por día: <b>" + res.tratos + "</b>. Oferta por trato: " + fmt(res.ofertaTratoMo, 2) + " kg tal cual.</p>";
+    html += '<div class="card">';
+    if (f.comidas && f.comidas.length) {
+      html += "<p>Comidas del día: " + f.comidas.map(function (c) { return "<b>" + esc(c.nombre) + "</b> " + fmt(c.kg, 0) + " kg"; }).join(" · ") + ".</p>";
+    }
+    html += "<p>Carga de <b>" + fmt(res.cargaKg, 0) + " kg</b> tal cual. Alcanza para unas <b>" + fmt(res.animalesPorCarga, 1) + "</b> cabezas de una comida. Tratos por día: <b>" + res.tratos + "</b>.</p>";
     html += "<p class=\"sub\">Orden de carga: fibra primero, silos después, concentrados y el núcleo al final. Lo cambiás en cada insumo. Los kilos de la carga están redondeados a 100 g y cierran con el total del mixer.</p>";
     html += '<div style="overflow-x:auto"><table><thead><tr><th>Orden</th><th>Insumo</th><th class="num">En la carga</th><th class="num">Día</th><th class="num">Semana</th><th class="num">Mes</th><th class="num">Gs / día</th></tr></thead><tbody>';
     res.cargaFilas.forEach(function (r, i) {
@@ -2370,9 +2487,9 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
         html += "<h2>" + esc(grupo) + "</h2>";
       }
       var tags = "";
-      if (ing.origen) tags += '<span class="badge">' + esc(ing.origen) + "</span>";
-      else if (ing.retrocalculado) tags += '<span class="badge">Retrocalculado</span>';
-      else if (ing.estimado) tags += '<span class="badge est">Estimado</span>';
+      if (ing.sinRotulo) tags += '<span class="badge mid">Sin rótulo</span>';
+      else if (ing.origen) tags += '<span class="badge">' + esc(ing.origen) + "</span>";
+      else if (ing.estimado) tags += '<span class="badge est">Estimado de tabla</span>';
       if (ing.precioNota) tags += '<span class="badge">' + esc(ing.precioNota) + "</span>";
       var precio = root.TGRation.precioKg(ing, S.db.settings.tipoCambio);
       var extra = "";
@@ -2456,6 +2573,8 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     html += '<div class="card"><label class="f"><span>Tipo de cambio, Gs por USD</span><input inputmode="decimal" data-bind="tc" value="' + esc(String(S.db.settings.tipoCambio)) + '"></label>';
     html += "<p class=\"sub\">Hoy la referencia de arranque es 6.180. Si un insumo está anclado en USD por tonelada, este número le cambia el precio en guaraníes.</p>";
     html += '<label class="check"><input type="checkbox" data-bind="lecheria"' + (S.db.settings.lecheria ? " checked" : "") + "><span>Activar lechería</span></label>";
+    html += '<label class="check"><input type="checkbox" data-bind="mostrarCostos"' + (S.db.settings.mostrarCostos ? " checked" : "") + "><span>Mostrar costos en el informe</span></label>";
+    html += "<p class=\"sub\">Apagado por defecto. El informe para el cliente no lleva precios salvo que lo actives.</p>";
     html += "<p class=\"sub\">La categoría lechera viene apagada. Al activarla aparece entre los bovinos.</p></div>";
     html += "<h2>Requerimientos</h2><p class=\"sub\">Son de tabla (NRC y BR-Corte, redondeados) y se pueden corregir.</p>";
     S.db.categorias.forEach(function (c) {
@@ -2470,7 +2589,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     html += '<button class="btn" type="button" data-act="exportar">Exportar JSON</button>';
     html += '<label class="btn-ghost" style="display:flex;align-items:center;justify-content:center">Importar JSON<input id="import-file" type="file" accept="application/json,.json" style="display:none"></label>';
     html += '<button class="btn-bad" type="button" data-act="reset">Volver a los datos de fábrica</button>';
-    html += '<p class="sub">El archivo se abre sin internet. Lo que cargues queda en este navegador. El JSON es la copia para no perderlo.</p>';
+    html += '<p class="sub">El respaldo JSON guarda clientes, insumos y fórmulas para llevarlos a otro aparato.</p>';
     return html;
   }
 
@@ -2508,75 +2627,87 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
 
   function screenInforme(f, res) {
     if (!f) return "<h1>Informe</h1>";
-    return '<div class="no-print"><button class="btn-ghost" type="button" data-go="resultado">Volver al resultado</button><button class="btn" type="button" data-act="imprimir">Imprimir o guardar PDF</button><p class="sub">En el iPad o el iPhone: compartir y elegir Imprimir, y después el recuadro de PDF.</p></div>' + informeHTML(f, res);
+    var costosOn = !!(S.db.settings && S.db.settings.mostrarCostos);
+    return '<div class="no-print"><button class="btn-ghost" type="button" data-go="resultado">Volver al resultado</button><label class="check"><input type="checkbox" data-bind="mostrarCostos"' + (costosOn ? " checked" : "") + "><span>Mostrar costos en el informe</span></label><button class=\"btn\" type=\"button\" data-act=\"imprimir\">Imprimir o guardar PDF</button><p class=\"sub\">En el iPad: compartir, Imprimir, y después PDF. Las notas internas no salen.</p></div>" + informeHTML(f, res);
   }
 
   function informeHTML(f, res) {
     var cli = byId(S.db.clientes, f.clienteId) || { nombre: "—", establecimiento: "" };
     var cat = catDe(f);
-    var alerts = root.TGRation.alertas(f, res).filter(function (a) { return a.nivel !== "info"; });
+    var mostrarCostos = !!(S.db.settings && S.db.settings.mostrarCostos);
+    var alerts = root.TGRation.alertas(f, res).filter(function (a) { return a.cliente; });
     var html = '<article class="sheet">';
     html += '<header class="rep"><p class="brand">TG · Tomás González<small>Médico Veterinario · Consultoría Ganadera</small></p></header>';
     html += "<h1 style=\"font-size:22px\">Informe de ración</h1>";
+    if (f.ficha) html += "<p>" + esc(f.ficha) + "</p>";
     html += "<table><tbody>";
     html += meta("Cliente", cli.nombre);
     html += meta("Establecimiento", cli.establecimiento || cli.nombre);
     html += meta("Fecha", f.fecha);
     html += meta("Fórmula", f.nombre);
     html += meta("Categoría", (cat ? (cat.especie === "ovino" ? "Ovino · " : "Bovino · ") : "") + (cat ? cat.nombre : ""));
-    html += meta("Peso vivo", fmt(f.pv, 0) + " kg");
-    html += meta("GMD objetivo", fmt(f.gmd, 2) + " kg/día");
+    if (Number(f.pv) > 0) html += meta("Peso vivo", fmt(f.pv, 0) + " kg");
+    if (Number(f.gmd) > 0) html += meta("Ganancia objetivo", fmt(f.gmd, 2) + " kg/día");
     html += meta("Cabezas", fmt(f.cabezas, 0));
-    html += meta("Modo", f.modo === "mincosto" ? "Mínimo costo" : "Manual");
-    if (f.consumoFicha) html += meta("Consumo según ficha", f.consumoFicha);
+    if (f.consumoFicha) html += meta("Consumo", f.consumoFicha);
     html += "</tbody></table>";
     html += "<h2>Composición</h2><table><thead><tr><th>Insumo</th><th class=\"num\">% MS</th><th class=\"num\">% tal cual</th><th class=\"num\">kg MS/cab</th><th class=\"num\">kg tal cual/cab</th></tr></thead><tbody>";
     res.filas.forEach(function (r) {
-      html += "<tr><td>" + esc(r.nombre) + (r.estimado ? " *" : "") + "</td><td class=\"num\">" + fmt(r.pctMs, 1) + "</td><td class=\"num\">" + fmt(r.pctMo, 1) + "</td><td class=\"num\">" + fmt(r.kgMs, 2) + "</td><td class=\"num\">" + fmt(r.kgMo, 2) + "</td></tr>";
+      html += "<tr><td>" + esc(r.nombre) + "</td><td class=\"num\">" + fmt(r.pctMs, 1) + "</td><td class=\"num\">" + fmt(r.pctMo, 1) + "</td><td class=\"num\">" + fmt(r.kgMs, 2) + "</td><td class=\"num\">" + fmt(r.kgMo, 2) + "</td></tr>";
     });
+    if (res.agua > 0) {
+      var pctAgua = res.kgMo > 0 ? (res.agua / res.kgMo) * 100 : 0;
+      html += "<tr><td>Agua</td><td class=\"num\">—</td><td class=\"num\">" + fmt(pctAgua, 1) + "</td><td class=\"num\">—</td><td class=\"num\">" + fmt(res.agua, 2) + "</td></tr>";
+    }
     html += "</tbody></table>";
     html += "<h2>Análisis y requerimiento</h2><table><thead><tr><th></th><th class=\"num\">Ración</th><th class=\"num\">Requerimiento</th><th>Estado</th></tr></thead><tbody>";
-    html += "<tr><td>MS por cabeza</td><td class=\"num\">" + fmt(res.ims, 2) + " kg</td><td></td><td></td></tr>";
+    html += "<tr><td>Materia seca por cabeza</td><td class=\"num\">" + fmt(res.ims, 2) + " kg</td><td></td><td></td></tr>";
     html += "<tr><td>Tal cual por cabeza</td><td class=\"num\">" + fmt(res.kgMo, 2) + " kg</td><td></td><td></td></tr>";
-    html += "<tr><td>MS de la mezcla</td><td class=\"num\">" + fmt(res.msRacion, 1) + " %</td><td></td><td></td></tr>";
+    html += "<tr><td>Materia seca de la mezcla</td><td class=\"num\">" + fmt(res.msRacion, 1) + " %</td><td></td><td></td></tr>";
     var pares = [
-      ["PB %", res.nut.pb, res.req.pb, null, 1],
+      ["Proteína bruta %", res.nut.pb, res.req.pb, null, 1],
       ["NDT %", res.nut.ndt, res.req.ndt, null, 1],
-      ["EM Mcal/kg", res.em, null, null, 2],
+      ["Energía metabolizable, Mcal/kg", res.em, null, null, 2],
       ["FDN %", res.nut.fdn, res.req.fdnMin, null, 1],
-      ["Ca %", res.nut.ca, res.req.ca, null, 2],
-      ["P %", res.nut.p, res.req.p, null, 2],
-      ["Ca:P", res.caP, res.req.caPMin, null, 2],
+      ["Calcio %", res.nut.ca, res.req.ca, null, 2],
+      ["Fósforo %", res.nut.p, res.req.p, null, 2],
+      ["Calcio:fósforo", res.caP, res.req.caPMin, null, 2],
       ["Almidón %", res.nut.almidon, null, res.req.almMax, 1],
     ];
     pares.forEach(function (p) {
-      var s = p[2] == null && p[3] == null ? { nivel: "info", texto: "" } : root.TGRation.semaforo(p[1], p[2], p[3]);
+      var s = p[2] == null && p[3] == null ? { texto: "" } : root.TGRation.semaforo(p[1], p[2], p[3]);
       var req = p[2] != null ? "mín. " + fmt(p[2], p[4]) : p[3] != null ? "máx. " + fmt(p[3], p[4]) : "—";
       html += "<tr><td>" + p[0] + "</td><td class=\"num\">" + fmt(p[1], p[4]) + "</td><td class=\"num\">" + req + "</td><td>" + esc(s.texto) + "</td></tr>";
     });
     html += "</tbody></table>";
-    html += "<h2>Costo</h2><table><tbody>";
-    html += meta("Por kg tal cual", gs(res.gsKgMo));
-    html += meta("Por tonelada tal cual", gs(res.gsTonMo) + " · " + usd(res.usdTonMo));
-    html += meta("Por tonelada de MS", gs(res.gsTonMs));
-    html += meta("Por cabeza y día", gs(res.costoCabeza) + " · " + usd(res.usdCabeza));
-    html += meta("Tipo de cambio", fmt(S.db.settings.tipoCambio, 0) + " Gs/USD");
-    html += "</tbody></table>";
-    html += "<h2>Carga del mixer</h2><p>Carga de " + fmt(res.cargaKg, 0) + " kg tal cual · " + res.tratos + " tratos por día · oferta " + fmt(res.ofertaTratoMo, 2) + " kg tal cual por animal y trato · la carga alcanza para " + fmt(res.animalesPorCarga, 1) + " animales.</p>";
-    html += '<table><thead><tr><th>#</th><th>Insumo</th><th class="num">kg en la carga</th><th class="num">kg/cab/día</th><th class="num">kg/día lote</th><th class="num">kg/semana</th><th class="num">kg/mes</th></tr></thead><tbody>';
+    if (mostrarCostos) {
+      html += "<h2>Costo</h2><table><tbody>";
+      html += meta("Por kg tal cual", gs(res.gsKgMo));
+      html += meta("Por tonelada tal cual", gs(res.gsTonMo) + " · " + usd(res.usdTonMo));
+      html += meta("Por tonelada de materia seca", gs(res.gsTonMs));
+      html += meta("Por cabeza y día", gs(res.costoCabeza) + " · " + usd(res.usdCabeza));
+      html += meta("Tipo de cambio", fmt(S.db.settings.tipoCambio, 0) + " Gs/USD");
+      html += "</tbody></table>";
+    }
+    html += "<h2>Carga del mixer</h2>";
+    if (f.comidas && f.comidas.length) {
+      html += "<p>Comidas del día: " + f.comidas.map(function (c) { return esc(c.nombre) + " " + fmt(c.kg, 0) + " kg"; }).join(", ") + ". La tabla corresponde a una carga de " + fmt(res.cargaKg, 0) + " kg.</p>";
+    } else {
+      html += "<p>Carga de " + fmt(res.cargaKg, 0) + " kg tal cual. Comidas por día: " + res.tratos + ". Oferta por comida: " + fmt(res.ofertaTratoMo, 2) + " kg tal cual por animal.</p>";
+    }
+    html += '<table><thead><tr><th>Orden</th><th>Insumo</th><th class="num">kg en la carga</th><th class="num">kg/cab/día</th><th class="num">kg/día</th><th class="num">kg/semana</th><th class="num">kg/mes</th></tr></thead><tbody>';
     res.cargaFilas.forEach(function (r, i) {
       html += "<tr><td>" + (i + 1) + "</td><td>" + esc(r.nombre) + "</td><td class=\"num\">" + fmt(r.kgCarga, 1) + "</td><td class=\"num\">" + fmt(r.cabeza, 2) + "</td><td class=\"num\">" + fmt(r.dia, 1) + "</td><td class=\"num\">" + fmt(r.semana, 0) + "</td><td class=\"num\">" + fmt(r.mes, 0) + "</td></tr>";
     });
     html += "</tbody></table>";
-    html += "<p>Costo del lote: día " + gs(res.costoDia) + " · semana " + gs(res.costoSemana) + " · mes (30 días) " + gs(res.costoMes) + ".</p>";
+    if (mostrarCostos) html += "<p>Costo del lote: día " + gs(res.costoDia) + ", semana " + gs(res.costoSemana) + ", mes " + gs(res.costoMes) + ".</p>";
     if (alerts.length) {
-      html += "<h2>Alertas</h2><ul>";
+      html += "<h2>Observaciones técnicas</h2><ul>";
       alerts.forEach(function (a) { html += "<li><b>" + esc(a.titulo) + ".</b> " + esc(a.texto) + "</li>"; });
       html += "</ul>";
     }
-    if (f.notas) html += "<h2>Notas</h2><p>" + esc(f.notas) + "</p>";
-    html += '<p style="font-size:12px;margin-top:18px">* Nutrientes de tabla o provisorios, sin análisis de laboratorio de los insumos. La EM sale del NDT (× 4,409 × 0,82). Los núcleos sin rótulo cargado hay que completarlos con la ficha del fabricante. Este informe no reemplaza el criterio clínico del veterinario.</p>';
-    html += '<p style="font-size:12px">TG · Tomás González, Médico Veterinario · Consultoría Ganadera</p>';
+    if (f.observaciones && String(f.observaciones).trim()) html += "<h2>Observaciones</h2><p>" + esc(f.observaciones) + "</p>";
+    html += '<p style="font-size:12px;margin-top:18px">Valores nutricionales estimados a partir de tablas de referencia. Formulación elaborada por Tomás González, Médico Veterinario · Consultoría Ganadera.</p>';
     html += "</article>";
     return html;
   }
@@ -2646,6 +2777,21 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
         S.screen = "resultado";
         toast("Mezcla de mínimo costo lista.");
       } else render();
+    } else if (act === "borrar-formula") {
+      S.confirm = {
+        titulo: "Quitar esta fórmula",
+        texto: "Se borra de este aparato. Si ya exportaste un respaldo, ese archivo queda igual.",
+        si: "Quitar",
+        run: function () {
+          S.db.formulas = S.db.formulas.filter(function (x) { return x.id !== f.id; });
+          if (!S.db.formulas.length) nuevaFormula();
+          else {
+            S.db.activeFormulaId = S.db.formulas[0].id;
+            S.screen = "formulas";
+          }
+        },
+      };
+      render();
     } else if (act === "duplicar") {
       var copia = JSON.parse(JSON.stringify(f));
       copia.id = "f" + Date.now().toString(36);
@@ -2754,7 +2900,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       return;
     }
     save();
-    if (e.target.tagName === "SELECT" || S.screen === "ingrediente" || S.screen === "ajustes" || S.screen === "requerimiento") render();
+    if (e.target.tagName === "SELECT" || S.screen === "ingrediente" || S.screen === "ajustes" || S.screen === "requerimiento" || S.screen === "informe") render();
   }
   function onInput(e) {
     aplicar(e.target);
@@ -2768,7 +2914,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     if (!bind) return;
     var f = activa();
     var v = el.type === "checkbox" ? el.checked : el.value;
-    if (bind === "nombre" || bind === "fecha" || bind === "notas") f[bind] = v;
+    if (bind === "nombre" || bind === "fecha" || bind === "notasInternas" || bind === "observaciones") f[bind] = v;
     else if (["pv", "gmd", "cabezas", "imsPct", "imsKg", "imsGPorKg", "tratos", "cargaKg", "aguaL"].indexOf(bind) >= 0) {
       var n = parseNum(v);
       if (n != null) f[bind] = n;
@@ -2807,6 +2953,7 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       var n4 = parseNum(v);
       if (n4 != null && n4 > 0) S.db.settings.tipoCambio = n4;
     } else if (bind === "lecheria") S.db.settings.lecheria = el.checked;
+    else if (bind === "mostrarCostos") S.db.settings.mostrarCostos = !!el.checked;
     else if (bind.indexOf("ing-") === 0) aplicarIng(el, bind, v);
     else if (bind.indexOf("req-") === 0) aplicarReq(el, bind, v);
     else if (bind.indexOf("cli-") === 0) aplicarCli(el, bind, v);
@@ -3040,21 +3187,21 @@ hr.soft { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
       try {
         var db = JSON.parse(reader.result);
         if (!db.ingredientes || !db.formulas) throw new Error("formato");
-        db.version = 3;
+        db.version = 5;
         S.db = db;
         if (!byId(S.db.formulas, S.db.activeFormulaId) && S.db.formulas[0]) S.db.activeFormulaId = S.db.formulas[0].id;
         save();
         S.screen = "formulas";
         toast("Respaldo importado.");
       } catch (err) {
-        toast("Ese archivo no es un respaldo de la app.");
+        toast("Ese archivo no es un respaldo de las raciones.");
         render();
       }
     };
     reader.readAsText(file);
   }
 
-  root.TGUI = { boot: boot };
+  root.TGUI = { boot: boot, informeHTML: informeHTML };
   if (typeof document !== "undefined") {
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
     else boot();
